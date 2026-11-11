@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI DevOps Assistant</title>
+  <!-- The page is split into three files:
+         index.html  - what is on the page (this file)
+         style.css   - how it looks
+         app.js      - what it does                                   -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- ================= Top bar ================= -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="logo mono">&gt;_</div>
+      <div>
+        <div class="brand-name">AI DevOps Assistant</div>
+        <div class="brand-tag">Log explainer, code reviewer and code builder</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="status-pill"><span class="dot" id="status-dot"></span><span id="status-text">Checking server...</span></div>
+      <button class="ghost" id="theme-button">Dark mode</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-inner">
+      <h1>Find out why it broke. Catch bugs before they ship.</h1>
+    </div>
+  </div>
+
+  <!-- ================= Counters ================= -->
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Saved results</div><div class="stat-value" id="stat-total">0</div></div>
+    <div class="stat"><div class="stat-label">Logs explained</div><div class="stat-value" id="stat-logs">0</div></div>
+    <div class="stat"><div class="stat-label">Code reviews</div><div class="stat-value" id="stat-code">0</div></div>
+    <div class="stat"><div class="stat-label">Code built</div><div class="stat-value" id="stat-build">0</div></div>
+  </div>
+
+  <div class="layout">
+    <!-- ================= Left column: the working area ================= -->
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" data-panel="log-panel">Explain logs</button>
+        <button class="tab" data-panel="code-panel">Review code</button>
+        <button class="tab" data-panel="build-panel">Build code</button>
+        <button class="tab" data-panel="history-panel">History</button>
+      </div>
+
+      <!-- ----- Explain logs ----- -->
+      <section id="log-panel" class="panel active">
+        <h2>Explain logs</h2>
+        <p class="hint">Paste application logs or an error message. You get what happened, the likely root cause, the fix and how to prevent it.</p>
+        <div class="editor">
+          <div class="editor-bar"><div class="lights"><span></span><span></span><span></span></div><span class="mono">application.log</span><span class="spacer"></span><span id="log-count">0 / 20,000</span></div>
+          <textarea id="log-input" class="mono" spellcheck="false" placeholder="Paste logs here, or click &quot;Load sample&quot; below..."></textarea>
+        </div>
+        <div class="actions">
+          <button class="primary" id="log-button">Explain</button>
+          <button class="secondary" id="log-sample">Load sample</button>
+          <button class="secondary" id="log-clear">Clear</button>
+          <span class="kbd">Ctrl + Enter to run</span>
+        </div>
+        <div class="result" id="log-result"></div>
+      </section>
+
+      <!-- ----- Review code ----- -->
+      <section id="code-panel" class="panel">
+        <h2>Review code</h2>
+        <p class="hint">Paste source code or a diff. You get a summary, bugs and risks, improvements and a verdict.</p>
+        <div class="editor">
+          <div class="editor-bar"><div class="lights"><span></span><span></span><span></span></div><span class="mono">code to review</span><span class="spacer"></span><span id="code-count">0 / 20,000</span></div>
+          <textarea id="code-input" class="mono" spellcheck="false" placeholder="Paste code here, or click &quot;Load sample&quot; below..."></textarea>
+        </div>
+        <div class="actions">
+          <button class="primary" id="code-button">Review</button>
+          <button class="secondary" id="code-sample">Load sample</button>
+          <button class="secondary" id="code-clear">Clear</button>
+          <span class="kbd">Ctrl + Enter to run</span>
+        </div>
+        <div class="result" id="code-result"></div>
+      </section>
+
+      <!-- ----- Build code (the code builder) ----- -->
+      <section id="build-panel" class="panel">
+        <h2>Code builder</h2>
+        <div class="seg">
+          <button class="seg-btn active" data-mode="prompt">Build code using prompt</button>
+          <button class="seg-btn" data-mode="tool">Build code using tool</button>
+          <button class="seg-btn" data-mode="make">Build tool</button>
+          <button class="seg-btn" data-mode="list" id="seg-list">Your tools</button>
+        </div>
+
+        <!-- Mode 1: build from a prompt -->
+        <div class="mode active" id="mode-prompt">
+          <p class="hint">Describe the code you need in your own words and the AI writes it. Start with <b>@tool_name</b> to jump to one of your tools.</p>
+          <div class="editor">
+            <div class="editor-bar"><div class="lights"><span></span><span></span><span></span></div><span class="mono">your prompt</span><span class="spacer"></span><span id="build-count">0 / 20,000</span></div>
+            <textarea id="build-input" class="mono" spellcheck="false" style="height:140px" placeholder="For example: write a function that checks whether a phone number is a valid 10-digit Indian mobile number"></textarea>
+          </div>
+          <div class="actions">
+            <button class="primary" id="build-button">Build</button>
+            <select id="build-language" aria-label="Language"></select>
+            <button class="secondary" id="build-clear">Clear</button>
+            <span class="kbd">Ctrl + Enter to run</span>
+          </div>
+          <div class="result" id="build-result"></div>
+        </div>
+
+        <!-- Mode 2: build using a saved tool -->
+        <div class="mode" id="mode-tool">
+          <p class="hint">Pick a saved tool and give it the resources it asks for. The tool already knows the instructions.</p>
+          <div class="empty" id="tool-none" hidden>You have no tools yet. Open <b>Build tool</b> to create your first one.</div>
+          <div id="tool-run">
+            <div class="pick"><b>Tool</b><select id="tool-select" aria-label="Tool"></select></div>
+            <div class="note" id="tool-note"></div>
+            <div id="tool-slots"></div>
+            <div class="field">
+              <label for="tool-extra">Extra instructions <span class="help">(optional, only for this run)</span></label>
+              <input class="input" id="tool-extra" placeholder="For example: client name is ABC">
+            </div>
+            <div class="note" id="tool-meter"></div>
+            <div class="actions">
+              <button class="primary" id="tool-build">Build</button>
+              <button class="secondary" id="tool-clear">Clear</button>
+            </div>
+            <div class="result" id="tool-result"></div>
+          </div>
+        </div>
+
+        <!-- Mode 3: create or edit a tool -->
+        <div class="mode" id="mode-make">
+          <p class="hint">Create a tool once for a repeated job. It fixes the instructions and the <b>types</b> of resources needed, so every run is done the same way.</p>
+          <div class="note good" id="form-title">New tool</div>
+          <div class="two">
+            <div class="field">
+              <label for="tool-name">Tool name</label>
+              <div class="prefix"><b class="mono">@</b><input class="input mono" id="tool-name" placeholder="pre_call" maxlength="30"></div>
+            </div>
+            <div class="field">
+              <label for="tool-language">Output language</label>
+              <select id="tool-language" style="width:100%"></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="tool-description">What it builds <span class="help">(one line)</span></label>
+            <input class="input" id="tool-description" placeholder="Pre-call setup code for a voice bot" maxlength="200">
+          </div>
+          <div class="field">
+            <label for="tool-instructions">Fixed instructions <span class="help">(how the code must be written, same every time)</span></label>
+            <textarea class="input mono" id="tool-instructions" rows="5" maxlength="8000" placeholder="Write a pre_call(lead) function. Return a dict the bot reads before dialling..."></textarea>
+          </div>
+          <div class="field">
+            <label>Resources this tool needs every time <span class="help">(you fill these in on each run)</span></label>
+            <div class="res-row res-head"><span>Resource name</span><span>What to provide</span><span>Required</span><span></span></div>
+            <div id="resource-rows"></div>
+            <button class="small-btn" id="resource-add">+ Add resource</button>
+          </div>
+          <div class="field">
+            <label for="tool-example">Example code or code format <span class="help">(optional)</span>
+              <span class="info-wrap">
+                <button type="button" class="info" id="example-info" aria-label="About this field" aria-describedby="example-tip">i</button>
+                <span class="tip" id="example-tip" role="tooltip">Optional. Add example code or a code template here, and this tool will write its code in the same structure and style. Leave it empty and the AI will use a standard format.</span>
+              </span>
+            </label>
+            <textarea class="input mono" id="tool-example" rows="6" maxlength="12000" placeholder="Paste example code here, or load it from a file..."></textarea>
+            <button class="small-btn" id="example-load" style="margin-top:8px">Load from file</button>
+            <input type="file" id="example-file" hidden>
+          </div>
+          <div class="note bad" id="form-message"></div>
+          <div class="actions">
+            <button class="primary" id="tool-save">Save tool</button>
+            <button class="secondary" id="tool-cancel">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Mode 4: the list of tools -->
+        <div class="mode" id="mode-list">
+          <p class="hint">All the tools you have built. Edit a tool to change its instructions or resources, or delete it.</p>
+          <div class="searchrow">
+            <input class="input" id="tool-search" placeholder="Search tools...">
+            <button class="primary" id="tool-new" style="padding:8px 16px">+ New tool</button>
+          </div>
+          <div class="note good" id="list-message"></div>
+          <div id="tool-list"></div>
+        </div>
+      </section>
+
+      <!-- ----- History ----- -->
+      <section id="history-panel" class="panel">
+        <h2>History</h2>
+        <p class="hint">Every result is stored in the SQLite database. Click one to open it.</p>
+        <div class="filters">
+          <button class="chip active" data-filter="all">All</button>
+          <button class="chip" data-filter="log">Logs</button>
+          <button class="chip" data-filter="code">Code reviews</button>
+          <button class="chip" data-filter="build">Built code</button>
+          <span class="spacer"></span>
+          <button class="danger" id="clear-all">Clear all</button>
+        </div>
+        <div class="datebar">
+          <b>Delete by date</b>
+          <label for="date-from">From</label><input class="input" type="date" id="date-from">
+          <label for="date-to">To</label><input class="input" type="date" id="date-to">
+          <span class="spacer"></span>
+          <button class="danger" id="date-delete" disabled>Pick two dates</button>
+        </div>
+        <div id="history-list"></div>
+        <div class="result" id="history-result"></div>
+      </section>
+    </div>
+
+    <!-- ================= Right column ================= -->
+    <aside class="side">
+      <div class="card card-pad">
+        <div class="chat-head"><h3>AI chat</h3><span class="spacer"></span><button class="small-btn" id="chat-new">New chat</button></div>
+        <div class="bubbles" id="chat-bubbles"></div>
+        <div class="chat-in">
+          <input class="input" id="chat-input" placeholder="Ask anything..." maxlength="4000">
+          <button class="primary" id="chat-send">Send</button>
+        </div>
+      </div>
+      <div class="card card-pad">
+        <h3>Recent activity</h3>
+        <div id="recent-list"></div>
+      </div>
+      <div class="card card-pad">
+        <h3>How it works</h3>
+        <ol class="steps">
+          <li><b>You send text</b><span>The page sends it to the backend as JSON.</span></li>
+          <li><b>The backend builds a prompt</b><span>FastAPI adds instructions for the AI model.</span></li>
+          <li><b>The AI model answers</b><span>An LLM is called through its API.</span></li>
+          <li><b>The result is saved</b><span>One row is written to the SQLite database.</span></li>
+        </ol>
+      </div>
+      <div class="card card-pad">
+        <h3>Built with</h3>
+        <div class="stack">
+          <span>Python</span><span>FastAPI</span><span>LLM API</span><span>SQLite</span>
+          <span>Docker</span><span>GitHub Actions</span><span>Webhooks</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>AI answers are suggestions and can be wrong. Do not paste passwords or secret keys.</footer>
+
+  <!-- ================= Confirmation dialog (hidden until needed) ================= -->
+  <div class="overlay" id="confirm-overlay" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h2 id="confirm-title">Are you sure?</h2>
+      <p id="confirm-text"></p>
+      <div class="actions">
+        <button class="secondary" id="confirm-no">Cancel</button>
+        <button class="danger-solid" id="confirm-yes">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

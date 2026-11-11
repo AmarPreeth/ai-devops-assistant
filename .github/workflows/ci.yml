@@ -1,0 +1,30 @@
+# CI pipeline: GitHub runs this file automatically on every push
+# and every pull request. If any step fails, the commit gets a red cross.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest        # a fresh Linux machine provided by GitHub
+    steps:
+      - name: Download the code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install libraries
+        run: pip install -r requirements.txt
+
+      - name: Run the automated tests
+        run: pytest -v
+
+      - name: Check that the Docker image builds
+        run: docker build -t ai-devops-assistant .

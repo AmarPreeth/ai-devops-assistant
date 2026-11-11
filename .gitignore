@@ -1,0 +1,7 @@
+# Never upload secrets or local data to GitHub
+.env
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

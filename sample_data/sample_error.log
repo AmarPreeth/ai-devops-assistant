@@ -1,0 +1,14 @@
+2026-11-10 09:14:02 INFO  Starting order-service v2.3.1
+2026-11-10 09:14:03 INFO  Connecting to database at db.internal:5432
+2026-11-10 09:14:03 INFO  Connection pool created (max_size=5)
+2026-11-10 09:20:41 WARNING Connection pool usage at 80% (4/5)
+2026-11-10 09:21:07 WARNING Connection pool usage at 100% (5/5)
+2026-11-10 09:21:37 ERROR Request POST /orders failed after 30000 ms
+Traceback (most recent call last):
+  File "/srv/app/orders.py", line 88, in create_order
+    conn = pool.get_connection(timeout=30)
+  File "/srv/app/db/pool.py", line 41, in get_connection
+    raise PoolTimeoutError("no free connection after 30s")
+db.pool.PoolTimeoutError: no free connection after 30s
+2026-11-10 09:21:38 ERROR Request GET /orders/1182 failed after 30000 ms
+2026-11-10 09:21:40 CRITICAL Health check failed: database unreachable from pool
